@@ -1,0 +1,379 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Chat Uyg.</title>
+
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font: 13px Helvetica, Arial; max-width:1300px; min-width:1300px; }
+      form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
+      form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
+      form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
+      #messages { list-style-type: none; margin: 0; padding: 0; }
+      #messages li { padding: 5px 10px; }
+      #messages li:nth-child(odd) { background: #eee; }
+.acilirmenu{
+    width:180px;
+    height:auto;
+}
+.acilirmenu ul{
+    width:180px;
+    margin:0;
+    padding:0;
+    list-style-type:none;  
+    text-align:center;
+}
+.acilirmenu li{
+    position: relative;
+    text-align:center;
+}
+.acilirmenu li ul{
+    position:absolute;
+    list-style-type:none;
+    left:179px;
+    width:150px;
+    display:none;
+    top:0;    
+    text-align:center;
+}
+.acilirmenu li a{
+    height:30px;
+    display: block;
+    text-decoration: none;
+    background-color: #3EA3AD;
+    color:#FFF;
+    font:500 15px Verdana;
+    padding:5px;
+    border:1px solid #FFF;
+    border-bottom:0; 
+    text-align: center;
+    line-height: 30px;
+}
+.acilirmenu li a:hover{
+    background-color:#52BEAA;
+    color:#FF0;
+}
+.acilirmenu li:hover ul{
+    display:block;
+}
+.tab {
+  overflow: hidden;
+  border: 1px solid #ccc;
+  background-color: #f1f1f1;
+}
+
+.tab button {
+  background-color: inherit;
+  float: left;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  padding: 14px 16px;
+  transition: 0.3s;
+}
+
+.tab button:hover {
+  background-color: #ddd;
+}
+
+.tab button.active {
+  background-color: #ccc;
+}
+.tabcontent {
+  width: 1100px;
+  display: none;
+  padding: 6px 12px;
+  border: 1px solid #ccc;
+  border-top: none;
+}
+
+    </style>
+  </head>
+  <body>
+    <table>
+      <tr valign = "top" >
+        <td >
+    <div class="acilirmenu">
+      <ul id='kullanicilar'>
+      </ul>
+      
+  </div>
+  </td>
+  <div class="acilirmenu">
+    <ul id='SohbetBaslat'>
+    </ul>
+    <td >
+</div>
+<div id='sohbetSecenekleri' style="width:100%" class="tab">
+  <button class="tablinks" id='globalchat'>Kuresel Kanal</button>
+</div>
+  <div  id="SohbetPencereleri" style="width:100%">
+      <div id="globalchatPencere" class="tabcontent">
+      </div>
+
+  </div>
+</td>
+
+</table>
+    <form action="">
+      <input id="m" autocomplete="off" /><button>Send</button>
+    </form>
+  
+  </body>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+  <script>
+    $(function () {
+      var OdaAdi=null;
+      var socket = io();
+      var SohbetIsmi=null;
+      var AktifSoket = null;
+      var KullaniciIsmi = null;
+      var TopluSohbetKanaliKullanicilari = [];
+      var Kullanicilar = null;
+
+      socket.on('OdaAyarla',function(OdaAnahtari){
+        var s = {
+          kulAd:'Grup Sohbeti',
+          socketId:OdaAnahtari
+        };
+        GrupPencereOlustur(s);
+        socket.emit('OdayaGir',OdaAnahtari);
+      });
+
+
+      socket.on('globalchat',function(Kimden,Mesaj){
+
+        $('#globalchatPencere').append($('<h3>').text(Kimden));
+        $('#globalchatPencere').append($('<p>').text(Mesaj));
+     
+      });
+      socket.on('GrupSohbeti',function(GonderenKullanici,Mesaj,OdaAnahtari){
+        console.log($('#'+OdaAnahtari));
+        $('#'+OdaAnahtari).append($('<h3>').text(GonderenKullanici));
+        $('#'+OdaAnahtari).append($('<p>').text(Mesaj));
+
+      });
+
+      socket.on('SohbetKanali',function(Kimden,Mesaj){
+        console.log(Mesaj+' Mesaj Geliyor '+Kimden);
+        if($('#Sohbet'+Kimden).length==0){
+          console.log('Sohbet Kanali Gonderen Id: Sohbet'+Kimden);
+                  $('#SohbetPencereleri').append($('<div>').attr('class','tabcontent').attr('id','Sohbet'+Kimden));
+
+                    $('#sohbetSecenekleri').append($('<button>').attr("class","tablinks").text(Kimden).click(function(evt){
+                      SohbetIsmi = evt.toElement.innerText;
+                      AktifSoket = $('#SohbetEkle'+Kimden).attr('socketId');
+                      console.log('AKTIF SOKET : '+AktifSoket);
+                      var i, tabcontent, tablinks;
+                      tabcontent = document.getElementsByClassName("tabcontent");
+                      for (i = 0; i < tabcontent.length; i++) {
+                        tabcontent[i].style.display = "none";
+                      }
+                      tablinks = document.getElementsByClassName("tablinks");
+                      for (i = 0; i < tablinks.length; i++) {
+                        tablinks[i].className = tablinks[i].className.replace(" active", "");
+                      }
+
+                      document.getElementById('Sohbet'+Kimden).style.display = "block";
+                      evt.currentTarget.className += " active";
+
+                  }))
+        }
+        $('#Sohbet'+Kimden).append($('<h3>').text(Kimden));
+        $('#Sohbet'+Kimden).append($('<p>').text(Mesaj));
+     
+      });
+
+
+      socket.on('OnlineGostergesi',function(kulAd,socketId){
+        console.log(socketId+ 'OnlineGostergesi Yapiliyor '+kulAd);
+        $('#ListeId'+kulAd).attr('style','background-color: #4CAF50');
+        $('#SohbetEkle'+kulAd).attr('socketId',socketId);
+        
+      });
+
+      socket.on('OfflineGostergesi',function(kulAd){
+
+        $('#ListeId'+kulAd).attr('style','background-color: #FF5722');
+      
+      });
+
+
+      socket.on('KullaniciListesi',function(KullaniciListesi,kulIsim){
+        Kullanicilar = KullaniciListesi;
+        console.log(KullaniciListesi.length);
+        if(KullaniciIsmi==null){
+          KullaniciIsmi = kulIsim;
+        }
+        $('#kullanicilar').empty();
+        KullaniciListesi.forEach(element => {
+       
+          if(KullaniciIsmi!=element.kulAd){
+          $('#kullanicilar').append($('<li>').append($('<a>').attr('id','ListeId'+element.kulAd).attr('style','background-color: #FF5722').attr("href","#").text(element.kulAd)
+            .append($('<ul>')
+              .append($('<li>')
+                .append($('<a>').text('Mesaj At').click(function(evt){
+                  SohbetPenceresiOlustur(evt,element);
+                }))
+                .append($('<a>').attr('id','SohbetEkle'+element.kulAd).attr('socketId',element.socketId).attr('kulAd',element.kulAd).text('Sohbete Ekle').click(function(evt){
+                  
+                  var hedefSoketId = ""+evt.toElement.getAttribute('socketId');
+                  var hedefKulAd = ""+evt.toElement.getAttribute('kulAd');
+                  var s = [hedefSoketId,hedefKulAd];
+                 
+                  bulundu = false;
+
+                  TopluSohbetKanaliKullanicilari.forEach(veri=>{
+                    if(veri[0]==hedefSoketId){
+                      bulundu=true;
+                    }
+                  });
+
+                  if(!bulundu){
+                    TopluSohbetKanaliKullanicilari.push(s);
+                  if(TopluSohbetKanaliKullanicilari.length>=2){
+                    $('#SohbetBaslat').empty();
+                    $('#SohbetBaslat').append($('<li>').append($('<a>').text('Oda Olustur').click(function(evt){
+
+                      
+                      socket.emit('OdaAyarla',TopluSohbetKanaliKullanicilari,KullaniciIsmi);
+                  
+                      $('#SohbetBaslat').empty();
+
+                    
+                    }).append($('<ul>').attr('id','OdaKur'))));
+                      
+                    TopluSohbetKanaliKullanicilari.forEach(veri=>{
+                      $('#OdaKur')
+                        .append($('<li>')
+                        .append($('<a>').text(veri[1]).click(function(evt){
+                        })))
+                    })
+                  }
+                  }
+                }))))));
+            }
+        });
+      });
+      var GrupPencereOlustur = function(element){
+                  SohbetIsmi = element.kulAd;
+                  AktifSoket = element.socketId;
+                  $('#SohbetPencereleri').append($('<div>').attr('class','tabcontent').attr('id',AktifSoket));
+
+                  $('#sohbetSecenekleri').append($('<button>').attr('socketid',AktifSoket).attr("class","tablinks").text(element.kulAd).click(function(evt){
+                    SohbetIsmi = 'Grup Sohbeti';
+                    AktifSoket = evt.toElement.getAttribute('socketid');
+                    //console.log(AktifSoket);
+                    var i, tabcontent, tablinks;
+                    tabcontent = document.getElementsByClassName("tabcontent");
+                    for (i = 0; i < tabcontent.length; i++) {
+                      tabcontent[i].style.display = "none";
+                    }
+                    tablinks = document.getElementsByClassName("tablinks");
+                    for (i = 0; i < tablinks.length; i++) {
+                      tablinks[i].className = tablinks[i].className.replace(" active", "");
+                    }
+
+                    document.getElementById(AktifSoket).style.display = "block";
+                    evt.currentTarget.className += " active";
+
+                  }))
+        }
+
+
+
+        var SohbetPenceresiOlustur = function(evt,element){
+                  SohbetIsmi = element.kulAd;
+                  AktifSoket = element.socketId;
+                  if($('#Sohbet'+element.kulAd).length<1){
+                  $('#SohbetPencereleri').append($('<div>').attr('class','tabcontent').attr('id','Sohbet'+SohbetIsmi));
+
+                  $('#sohbetSecenekleri').append($('<button>').attr("class","tablinks").text(element.kulAd).click(function(evt){
+                    SohbetIsmi = evt.toElement.innerText;
+                    console.log('SOHBET ISMI : '+SohbetIsmi);
+
+                    AktifSoket = $('#SohbetEkle'+element.kulAd).attr('socketId');
+
+                    var i, tabcontent, tablinks;
+                    tabcontent = document.getElementsByClassName("tabcontent");
+                    for (i = 0; i < tabcontent.length; i++) {
+                      tabcontent[i].style.display = "none";
+                    }
+                    tablinks = document.getElementsByClassName("tablinks");
+                    for (i = 0; i < tablinks.length; i++) {
+                      tablinks[i].className = tablinks[i].className.replace(" active", "");
+                    }
+
+                    document.getElementById('Sohbet'+SohbetIsmi).style.display = "block";
+                    evt.currentTarget.className += " active";
+
+                  }))
+                }
+              }
+
+
+                $('#globalchat').click(function(evt){
+                  AktifSoket=null;
+                  SohbetIsmi='globalchat';
+                  var i, tabcontent, tablinks;
+                  tabcontent = document.getElementsByClassName("tabcontent");
+                  for (i = 0; i < tabcontent.length; i++) {
+                    tabcontent[i].style.display = "none";
+                  }
+                  tablinks = document.getElementsByClassName("tablinks");
+                  for (i = 0; i < tablinks.length; i++) {
+                    tablinks[i].className = tablinks[i].className.replace(" active", "");
+                  }
+
+                  document.getElementById('globalchatPencere').style.display = "block";
+                  evt.currentTarget.className += " active";
+                });
+
+
+          $('form').submit(function(e){
+            e.preventDefault(); 
+            console.log(SohbetIsmi +"   "+AktifSoket);
+            if(SohbetIsmi=='Grup Sohbeti'){
+              socket.emit('GrupSohbeti',KullaniciIsmi,$('#m').val(),AktifSoket);
+              console.log('Grup Sohbetinden Yaziyoruz');
+            }else{
+            if(AktifSoket!=null){
+
+             console.log('Aktif Soket : '+AktifSoket);
+             
+              AktifSoket = $('#SohbetEkle'+SohbetIsmi).attr('socketId');
+              socket.emit('SohbetKanali',AktifSoket,KullaniciIsmi,$('#m').val(),socket.id,SohbetIsmi);
+              
+              $('#Sohbet'+SohbetIsmi).append($('<h3>').text(KullaniciIsmi));
+              $('#Sohbet'+SohbetIsmi).append($('<p>').text($('#m').val()));
+            
+            }else{
+              if(SohbetIsmi=='globalchat'){
+                socket.emit('globalchat',KullaniciIsmi,$('#m').val());
+              }
+            }
+          }
+            
+            $('#m').val('');
+            return false;
+      });
+
+
+
+
+                AktifSoket=null;
+                  SohbetIsmi='globalchat';
+                  var i, tabcontent, tablinks;
+                  tabcontent = document.getElementsByClassName("tabcontent");
+                  for (i = 0; i < tabcontent.length; i++) {
+                    tabcontent[i].style.display = "none";
+                  }
+                  tablinks = document.getElementsByClassName("tablinks");
+                  for (i = 0; i < tablinks.length; i++) {
+                    tablinks[i].className = tablinks[i].className.replace(" active", "");
+                  }
+                  document.getElementById('globalchatPencere').style.display = "block";
+    });
+  </script>
+</html>
